@@ -1,28 +1,13 @@
 # Ollama WebUI RunPod Template
 
-This template provides a production-ready setup for running Ollama with Open WebUI and VS Code on RunPod. It's designed for both development and inference workloads.
-
-## Features
-
-- Ollama for running LLMs
-- Open WebUI for chat interface
-- VS Code for development
-- GPU support
-- Persistent storage
-- Automatic service recovery
+This template provides a setup for running Ollama with Open WebUI and VS Code on RunPod.
 
 ## Quick Start
 
-1. Build and push the custom image (one-time setup):
-```bash
-docker build -t your-dockerhub-username/ollama-webui:latest .
-docker push your-dockerhub-username/ollama-webui:latest
-```
-
-2. Create a new Pod on RunPod with these settings:
+Create a new Pod on RunPod with these settings:
 
 ```
-Container Image: your-dockerhub-username/ollama-webui:latest
+Container Image: runpod/base:0.4.0-cuda11.7.1
 
 Expose Ports:
 - HTTP 3000 (WebUI)
@@ -36,18 +21,17 @@ Environment Variables:
 Volume Mount:
 - Container Path: /root/.ollama
   Size: 20GB (or more depending on your models)
+
+Start Command:
+/bin/bash -c 'curl -o start.sh https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh && chmod +x start.sh && ./start.sh'
 ```
 
-3. Access your services:
+## Access
+
+After the pod starts, you can access:
 - WebUI: https://<pod-id>-3000.proxy.runpod.net
 - VS Code: https://<pod-id>-8080.proxy.runpod.net
 - Ollama API: https://<pod-id>-11434.proxy.runpod.net
-
-## Development
-
-- The `/root/workspace` directory is persistent and mounted in VS Code
-- Use VS Code's terminal to manage Ollama models and configurations
-- Access GPU resources through Ollama's API
 
 ## Model Management
 
