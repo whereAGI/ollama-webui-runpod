@@ -23,7 +23,7 @@ Volume Mount:
   Size: 20GB (or more depending on your models)
 
 Start Command:
-/bin/bash -c 'apt-get update && apt-get install -y curl docker.io && service docker start && curl https://ollama.ai/install.sh | sh && curl -L https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -o start.sh && chmod +x start.sh && ./start.sh'
+/bin/bash -c 'apt-get update && apt-get install -y curl docker.io && dockerd > /var/log/dockerd.log 2>&1 & sleep 5 && curl https://ollama.ai/install.sh | sh && curl -L https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -o start.sh && chmod +x start.sh && ./start.sh'
 ```
 
 ## Access
@@ -52,18 +52,23 @@ ollama run llama2
 
 If services don't start properly:
 
-1. Check container logs:
+1. Check Docker daemon logs:
+```bash
+cat /var/log/dockerd.log
+```
+
+2. Check container logs:
 ```bash
 docker logs open-webui
 docker logs code-server
 ```
 
-2. Verify Ollama is running:
+3. Verify Ollama is running:
 ```bash
 curl localhost:11434/api/version
 ```
 
-3. Restart services if needed:
+4. Restart services if needed:
 ```bash
 docker restart open-webui
 docker restart code-server
