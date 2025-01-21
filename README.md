@@ -25,20 +25,15 @@ Volume Mount:
 Start Command:
 /bin/bash -c '\
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y curl docker.io wget && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget containerd runc && \
+    wget https://github.com/containerd/nerdctl/releases/download/v1.7.2/nerdctl-1.7.2-linux-amd64.tar.gz -O nerdctl.tar.gz && \
+    tar Cxzvf /usr/local/bin nerdctl.tar.gz && \
     wget -q https://ollama.ai/install.sh -O install.sh && \
     chmod +x install.sh && \
     ./install.sh && \
     wget -q https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -O start.sh && \
-    if [ -f "start.sh" ]; then \
-        chmod +x start.sh && \
-        dockerd > /var/log/dockerd.log 2>&1 & \
-        sleep 5 && \
-        ./start.sh; \
-    else \
-        echo "Failed to download start.sh"; \
-        exit 1; \
-    fi'
+    chmod +x start.sh && \
+    ./start.sh'
 ```
 
 ## Access
@@ -67,26 +62,28 @@ ollama run llama2
 
 If services don't start properly:
 
-1. Check Docker daemon logs:
+1. Check containerd logs:
 ```bash
-cat /var/log/dockerd.log
+cat /var/log/containerd.log
 ```
 
-2. Check container logs:
-```bash
-docker logs open-webui
-docker logs code-server
-```
-
-3. Verify Ollama is running:
+2. Check Ollama is running:
 ```bash
 curl localhost:11434/api/version
 ```
 
-4. Restart services if needed:
+3. Verify containers are running:
 ```bash
-docker restart open-webui
-docker restart code-server
+nerdctl ps
+```
+
+4. Check service status:
+```bash
+# Check Ollama
+pgrep ollama
+
+# Check containerd
+pgrep containerd
 ```
 
 ## Contributing
