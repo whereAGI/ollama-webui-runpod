@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Start Ollama
+# Start Ollama with explicit host binding
 echo "Starting Ollama..."
-ollama serve &
+ollama serve --host 0.0.0.0 &
 
 # Wait for Ollama to be ready
 echo "Waiting for Ollama to be ready..."
 MAX_RETRIES=30
 count=0
-while ! curl -s localhost:11434/api/version > /dev/null; do
+while ! curl -s http://0.0.0.0:11434/api/version > /dev/null; do
     sleep 1
     count=$((count + 1))
     if [ $count -eq $MAX_RETRIES ]; then
@@ -18,61 +18,53 @@ while ! curl -s localhost:11434/api/version > /dev/null; do
 done
 echo "Ollama is ready!"
 
-# Configure container runtime
-echo "Setting up container runtime..."
-mkdir -p /etc/containerd
-cat > /etc/containerd/config.toml << EOF
-version = 2
-
-[plugins."io.containerd.grpc.v1.cri"]
-  sandbox_image = "k8s.gcr.io/pause:3.2"
-
-[plugins."io.containerd.grpc.v1.cri".containerd]
-  default_runtime_name = "runc"
-
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-  runtime_type = "io.containerd.runc.v2"
-EOF
-
-# Start containerd
-echo "Starting containerd..."
-containerd > /var/log/containerd.log 2>&1 &
-
-# Wait for containerd to be ready
-sleep 5
-
-# Start Open WebUI using nerdctl (containerd-compatible Docker alternative)
+# Start Open WebUI directly with host network
 echo "Starting Open WebUI..."
-nerdctl run -d \
+docker run -d \
     --network host \
-    -e OLLAMA_API_BASE_URL=http://localhost:11434 \
+    -e OLLAMA_API_BASE_URL=http://0.0.0.0:11434 \
+    -e HOST=0.0.0.0 \
+    -p 3000:8080 \
     -v open-webui:/app/backend/data \
     --name open-webui \
     --restart always \
     ghcr.io/open-webui/open-webui:main
 
-# Start VS Code server
+# Start VS Code server with explicit host binding
 echo "Starting VS Code server..."
-nerdctl run -d \
+docker run -d \
     --network host \
     -v /root/workspace:/root/workspace \
     -e PASSWORD=${PASSWORD:-password} \
+    -p 8080:8080 \
     --name code-server \
     --restart always \
     codercom/code-server:latest \
-    --bind-addr 0.0.0.0:8080
+    --bind-addr 0.0.0.0:8080 \
+    --auth password
 
 echo "All services started!"
 
-# Monitor services
+# Print service URLs
+echo "Service URLs:"
+echo "Ollama API: http://0.0.0.0:11434"
+echo "Open WebUI: http://0.0.0.0:3000"
+echo "VS Code: http://0.0.0.0:8080"
+
+# Keep script running
 while true; do
     sleep 30
-    if ! pgrep ollama > /dev/null; then
-        echo "Ollama is not running, attempting to restart..."
-        ollama serve &
+    # Check if services are running
+    if ! curl -s http://0.0.0.0:11434/api/version > /dev/null; then
+        echo "Ollama is not responding, attempting to restart..."
+        ollama serve --host 0.0.0.0 &
     fi
-    if ! pgrep containerd > /dev/null; then
-        echo "containerd is not running, attempting to restart..."
-        containerd > /var/log/containerd.log 2>&1 &
+    if ! curl -s http://0.0.0.0:3000 > /dev/null; then
+        echo "Open WebUI is not responding, attempting to restart..."
+        docker restart open-webui
+    fi
+    if ! curl -s http://0.0.0.0:8080 > /dev/null; then
+        echo "VS Code server is not responding, attempting to restart..."
+        docker restart code-server
     fi
 done
