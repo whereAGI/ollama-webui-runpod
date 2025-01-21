@@ -7,7 +7,7 @@ This template provides a setup for running Ollama with Open WebUI and VS Code on
 Create a new Pod on RunPod with these settings:
 
 ```
-Container Image: runpod/base:0.4.0-cuda11.7.1
+Container Image: nvidia/cuda:12.1.0-base-ubuntu22.04
 
 Expose Ports:
 - HTTP 3000 (WebUI)
@@ -23,7 +23,7 @@ Volume Mount:
   Size: 20GB (or more depending on your models)
 
 Start Command:
-/bin/bash -c 'curl -o start.sh https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh && chmod +x start.sh && ./start.sh'
+/bin/bash -c 'apt-get update && apt-get install -y curl docker.io && curl -L https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -o start.sh && chmod +x start.sh && ./start.sh'
 ```
 
 ## Access
