@@ -22,19 +22,8 @@ Volume Mount:
 - Container Path: /root/.ollama
   Size: 20GB (or more depending on your models)
 
-Additional Settings:
-- Enable Privileged Mode: Yes
-
 Start Command:
-/bin/bash -c '\
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y curl docker.io wget systemd && \
-    wget -q https://ollama.ai/install.sh -O install.sh && \
-    chmod +x install.sh && \
-    ./install.sh && \
-    wget -q https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -O start.sh && \
-    chmod +x start.sh && \
-    ./start.sh'
+apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y curl docker.io wget && curl -L https://ollama.ai/install.sh | sh && curl -L https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -o start.sh && chmod +x start.sh && ./start.sh
 ```
 
 ## Access
@@ -63,14 +52,14 @@ ollama run llama2
 
 If services don't start properly:
 
-1. Check Docker daemon logs:
-```bash
-cat /var/log/docker.log
-```
-
-2. Check Ollama is running:
+1. Check if Ollama is running:
 ```bash
 curl http://0.0.0.0:11434/api/version
+```
+
+2. Check if Docker is running:
+```bash
+docker ps
 ```
 
 3. Check container logs:
@@ -79,17 +68,13 @@ docker logs open-webui
 docker logs code-server
 ```
 
-4. Restart specific service:
+4. Restart services if needed:
 ```bash
-# Restart WebUI
-docker restart open-webui
-
-# Restart VS Code
-docker restart code-server
-
-# Restart Ollama
+# Restart everything
 pkill ollama
-ollama serve --host 0.0.0.0
+dockerd &
+sleep 5
+./start.sh
 ```
 
 ## Contributing
