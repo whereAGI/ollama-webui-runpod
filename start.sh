@@ -1,34 +1,49 @@
 #!/bin/bash
 
-# Start Docker daemon
-dockerd > /var/log/dockerd.log 2>&1 &
-
-# Function to check if Docker daemon is ready
-wait_for_docker() {
-    local max_attempts=30
-    local attempt=1
-    echo "Waiting for Docker daemon to start..."
-    while ! docker info >/dev/null 2>&1; do
-        if [ $attempt -gt $max_attempts ]; then
-            echo "Docker daemon failed to start in time"
-            return 1
-        fi
-        echo "Attempt $attempt/$max_attempts: Docker daemon not ready yet..."
-        sleep 2
-        attempt=$((attempt + 1))
-    done
-    echo "Docker daemon is ready!"
-    return 0
-}
-
 # Start Ollama
+echo "Starting Ollama..."
 ollama serve &
 
-# Wait for Docker to be ready
-wait_for_docker || exit 1
+# Wait for Ollama to be ready
+echo "Waiting for Ollama to be ready..."
+MAX_RETRIES=30
+count=0
+while ! curl -s localhost:11434/api/version > /dev/null; do
+    sleep 1
+    count=$((count + 1))
+    if [ $count -eq $MAX_RETRIES ]; then
+        echo "Failed to start Ollama"
+        exit 1
+    fi
+done
+echo "Ollama is ready!"
 
+# Configure container runtime
+echo "Setting up container runtime..."
+mkdir -p /etc/containerd
+cat > /etc/containerd/config.toml << EOF
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri"]
+  sandbox_image = "k8s.gcr.io/pause:3.2"
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+  default_runtime_name = "runc"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  runtime_type = "io.containerd.runc.v2"
+EOF
+
+# Start containerd
+echo "Starting containerd..."
+containerd > /var/log/containerd.log 2>&1 &
+
+# Wait for containerd to be ready
+sleep 5
+
+# Start Open WebUI using nerdctl (containerd-compatible Docker alternative)
 echo "Starting Open WebUI..."
-docker run -d \
+nerdctl run -d \
     --network host \
     -e OLLAMA_API_BASE_URL=http://localhost:11434 \
     -v open-webui:/app/backend/data \
@@ -36,8 +51,9 @@ docker run -d \
     --restart always \
     ghcr.io/open-webui/open-webui:main
 
+# Start VS Code server
 echo "Starting VS Code server..."
-docker run -d \
+nerdctl run -d \
     --network host \
     -v /root/workspace:/root/workspace \
     -e PASSWORD=${PASSWORD:-password} \
@@ -46,20 +62,17 @@ docker run -d \
     codercom/code-server:latest \
     --bind-addr 0.0.0.0:8080
 
-# Keep the script running and monitor services
+echo "All services started!"
+
+# Monitor services
 while true; do
     sleep 30
-    # Check if all services are running
-    if ! docker ps | grep -q open-webui; then
-        echo "Open WebUI container is not running, attempting to restart..."
-        docker start open-webui
-    fi
-    if ! docker ps | grep -q code-server; then
-        echo "VS Code server container is not running, attempting to restart..."
-        docker start code-server
-    fi
     if ! pgrep ollama > /dev/null; then
         echo "Ollama is not running, attempting to restart..."
         ollama serve &
+    fi
+    if ! pgrep containerd > /dev/null; then
+        echo "containerd is not running, attempting to restart..."
+        containerd > /var/log/containerd.log 2>&1 &
     fi
 done
