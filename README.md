@@ -13,10 +13,16 @@ This template provides a production-ready setup for running Ollama with Open Web
 
 ## Quick Start
 
-1. Create a new Pod on RunPod with these settings:
+1. Build and push the custom image (one-time setup):
+```bash
+docker build -t your-dockerhub-username/ollama-webui:latest .
+docker push your-dockerhub-username/ollama-webui:latest
+```
+
+2. Create a new Pod on RunPod with these settings:
 
 ```
-Container Image: ollama/ollama:latest
+Container Image: your-dockerhub-username/ollama-webui:latest
 
 Expose Ports:
 - HTTP 3000 (WebUI)
@@ -30,12 +36,9 @@ Environment Variables:
 Volume Mount:
 - Container Path: /root/.ollama
   Size: 20GB (or more depending on your models)
-
-Start Command:
-/bin/sh -c 'curl -o start.sh https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh && chmod +x start.sh && ./start.sh'
 ```
 
-2. Access your services:
+3. Access your services:
 - WebUI: https://<pod-id>-3000.proxy.runpod.net
 - VS Code: https://<pod-id>-8080.proxy.runpod.net
 - Ollama API: https://<pod-id>-11434.proxy.runpod.net
