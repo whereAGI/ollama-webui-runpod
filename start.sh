@@ -1,17 +1,12 @@
-#!/bin/sh
-
-# Create workspace directory if it doesn't exist
-mkdir -p /root/workspace
+#!/bin/bash
 
 # Start Ollama
-echo "Starting Ollama..."
 ollama serve &
 
 # Wait for Ollama to start
 sleep 5
 
 # Start Open WebUI
-echo "Starting Open WebUI..."
 docker run -d \
     --network host \
     -e OLLAMA_API_BASE_URL=http://localhost:11434 \
@@ -21,7 +16,6 @@ docker run -d \
     ghcr.io/open-webui/open-webui:main
 
 # Start code-server
-echo "Starting VS Code Server..."
 docker run -d \
     --network host \
     -v /root/workspace:/root/workspace \
