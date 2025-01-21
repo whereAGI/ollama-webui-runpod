@@ -32,7 +32,7 @@ Volume Mount:
   Size: 20GB (or more depending on your models)
 
 Start Command:
-/bin/bash -c 'curl -o start.sh https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh && chmod +x start.sh && ./start.sh'
+/bin/sh -c 'curl -o start.sh https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh && chmod +x start.sh && ./start.sh'
 ```
 
 2. Access your services:
