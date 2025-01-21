@@ -23,7 +23,22 @@ Volume Mount:
   Size: 20GB (or more depending on your models)
 
 Start Command:
-/bin/bash -c 'apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y curl docker.io wget && wget https://ollama.ai/install.sh -O install.sh && chmod +x install.sh && ./install.sh && wget https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -O start.sh && chmod +x start.sh && dockerd > /var/log/dockerd.log 2>&1 & sleep 5 && ./start.sh'
+/bin/bash -c '\
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y curl docker.io wget && \
+    wget -q https://ollama.ai/install.sh -O install.sh && \
+    chmod +x install.sh && \
+    ./install.sh && \
+    wget -q https://raw.githubusercontent.com/whereAGI/ollama-webui-runpod/main/start.sh -O start.sh && \
+    if [ -f "start.sh" ]; then \
+        chmod +x start.sh && \
+        dockerd > /var/log/dockerd.log 2>&1 & \
+        sleep 5 && \
+        ./start.sh; \
+    else \
+        echo "Failed to download start.sh"; \
+        exit 1; \
+    fi'
 ```
 
 ## Access
